@@ -1,16 +1,56 @@
-version: '3'
+  GNU nano 6.2                                                                                                 docker-compose.yml                                                                                                           version: '3'
+
 services:
+  postgres:
+    image: postgres:16
+    container_name: openproject-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: openproject
+      POSTGRES_PASSWORD: openprojectdbpassword # change this password
+      POSTGRES_DB: openproject
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - openproject-network
+
+  memcached:
+    image: memcached:latest
+    container_name: openproject-memcached
+    restart: always
+    networks:
+      - openproject-network
+
   openproject:
     image: openproject/openproject:15
     container_name: openproject
     restart: always
+    depends_on:
+      - postgres
+      - memcached
     ports:
-      - "8686:80"
+      - "8686:80"  # mapping port 80 to 8686
     environment:
+      OPENPROJECT_HOST__NAME: "192.168.1.6"  #c hange this to domain if avialable
       OPENPROJECT_HTTPS: "false"
-      OPENPROJECT_HOST__NAME: "localhost"
+      DATABASE_URL: "postgres://openproject:openprojectdbpassword@postgres:5432/openproject"  # password need to same with pg password
+      OPENPROJECT_SECRET_KEY_BASE: "7779b253e2a7e0d79c415adcf9b8dcc957aead85188a54b256218993ef7d0e6f3272d37dcb7ea8e804f79d2de2580456456a9f642c48cf6f545ac97602d71e74"  # need to generate via: openssl rand -hex 64
+      OPENPROJECT_CACHE__STORE: "memcache"
+      OPENPROJECT_CACHE__MEMCACHE__SERVER: "memcached:11211"
     volumes:
-      - openproject-data:/var/openproject/assets  # Updated path
+      - openproject-data:/var/openproject/assets
+      - openproject-static:/var/openproject/public
+    networks:
+      - openproject-network
+
 volumes:
+  postgres-data:
+    driver: local
   openproject-data:
     driver: local
+  openproject-static:
+    driver: local
+
+networks:
+  openproject-network:
+    driver: bridge
