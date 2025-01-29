@@ -1,0 +1,16 @@
+version: '3'
+services:
+  openproject:
+    image: openproject/openproject:15
+    container_name: openproject
+    restart: always
+    ports:
+      - "8686:80"
+    environment:
+      OPENPROJECT_HTTPS: "false"
+      OPENPROJECT_HOST__NAME: "localhost"
+    volumes:
+      - openproject-data:/var/openproject/assets  # Updated path
+volumes:
+  openproject-data:
+    driver: local
